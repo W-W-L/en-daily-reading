@@ -70,6 +70,8 @@
   .panel .mean { margin: 8px 0 12px; font-size: 15px; }
   .panel .ex { background: var(--bg); border-radius: 8px; padding: 10px 12px; font-size: 14px; }
   .panel .ex div + div { color: var(--muted); margin-top: 4px; }
+  .panel .ex .exlabel { color: var(--muted); font-size: 11px; margin-bottom: 6px; }
+  .panel .ex .exzh { color: var(--muted); margin-top: 5px; }
   .panel .src { color: var(--muted); font-size: 12px; margin-top: 10px; }
   .panel .rowline { margin: 6px 0; font-size: 14px; }
   .panel .label { color: var(--muted); font-size: 12px; margin-right: 6px; }
@@ -315,14 +317,89 @@
       return { phonetic: phonetic, pos: pos, meaningEn: def, exampleEn: example, audio: audio };
     });
   }
-  function sentenceFor(word, i) {
-    var p = article && article.paragraphs[i];
-    if (!p) return '';
-    var sents = p.en.match(/[^.!?]+[.!?]?/g) || [];
-    for (var j = 0; j < sents.length; j++) {
-      if (sents[j].toLowerCase().indexOf(word.toLowerCase()) >= 0) return sents[j].trim();
+  function escRe(s) { return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+  // 只取真正包含该词的句子。找不到就返回空，绝不拿段落开头凑数（这正是之前"每个词同一句"的原因）
+  function articleExample(word, paraIndex) {
+    if (!article || !article.paragraphs) return null;
+    var w = word.toLowerCase(), re = new RegExp('\\b' + escRe(w) + '\\b', 'i');
+    var order = [paraIndex];
+    for (var k = 0; k < article.paragraphs.length; k++) if (k !== paraIndex) order.push(k);
+    for (var n = 0; n < order.length; n++) {
+      var p = article.paragraphs[order[n]];
+      if (!p || !p.en) continue;
+      var sents = p.en.match(/[^.!?]+[.!?]?/g) || [];
+      for (var j = 0; j < sents.length; j++) {
+        if (re.test(sents[j])) {
+          return { en: sents[j].trim(), zh: p.zh || '', label: '本文语境 · 中文为该句所在段落译文' };
+        }
+      }
     }
-    return p.en.slice(0, 180);
+    return null;
+  }
+  var transCache = {};
+  function translateToZh(text) {
+    if (!text) return Promise.resolve('');
+    if (transCache[text]) return Promise.resolve(transCache[text]);
+    var url = 'https://api.mymemory.translated.net/get?q=' +
+      encodeURIComponent(text.slice(0, 480)) + '&langpair=en%7Czh-CN';
+    return fetchJsonTimed(url, 6000).then(function (d) {
+      var t = d && d.responseData && d.responseData.translatedText;
+      if (!t || /MYMEMORY WARNING|INVALID/i.test(t)) return '';
+      transCache[text] = t;
+      return t;
+    }).catch(function () { return ''; });
+  }
+  // Tatoeba：真实语料例句，自带中文对照，CORS 已实测放开
+  function tatoebaExample(word) {
+    var url = 'https://api.tatoeba.org/v1/sentences?lang=eng&q=' + encodeURIComponent(word) +
+      '&trans:lang=cmn&sort=relevance&limit=8';
+    return fetchJsonTimed(url, 7000).then(function (d) {
+      var list = (d && d.data) || [], re = new RegExp('\\b' + escRe(word) + '\\b', 'i');
+      var best = null, alt = null;
+      for (var i = 0; i < list.length; i++) {
+        var s = list[i];
+        if (!s || !s.text || !re.test(s.text)) continue;
+        var zh = '';
+        (s.translations || []).some(function (t) {
+          if (t && t.lang === 'cmn' && t.text) { zh = t.text; return true; }
+          return false;
+        });
+        if (!zh) continue;
+        var cand = { en: s.text, zh: zh, label: 'Tatoeba 语料例句（CC BY 2.0 FR）' };
+        if (!alt) alt = cand;
+        var wc = s.text.split(/\s+/).length;
+        if (wc >= 6 && wc <= 20 && s.text.indexOf('"') === -1) { best = cand; break; }
+      }
+      return best || alt;
+    }).catch(function () { return null; });
+  }
+  function dictExample(word) {
+    return onlineLookup(word).then(function (o) {
+      if (!o || !o.exampleEn) return null;
+      return translateToZh(o.exampleEn).then(function (zh) {
+        return { en: o.exampleEn, zh: zh, label: zh ? 'Free Dictionary 例句 · 机器翻译' : 'Free Dictionary 例句' };
+      });
+    }).catch(function () { return null; });
+  }
+  var exCache = {};
+  try { exCache = JSON.parse(localStorage.getItem('dr:ex') || '{}') || {}; } catch (e) { exCache = {}; }
+  function saveExCache() {
+    try {
+      var keys = Object.keys(exCache);
+      if (keys.length > 600) keys.slice(0, keys.length - 600).forEach(function (k) { delete exCache[k]; });
+      localStorage.setItem('dr:ex', JSON.stringify(exCache));
+    } catch (e) {}
+  }
+  // 链路：命中缓存 → Tatoeba（英中对照）→ 词典 API 例句 → 本文真实所在句 → 隐藏
+  function resolveExample(word, paraIndex) {
+    if (exCache[word]) return Promise.resolve(exCache[word]);
+    return tatoebaExample(word).then(function (t) {
+      if (t) { exCache[word] = t; saveExCache(); return t; }
+      return dictExample(word).then(function (d) {
+        if (d) { exCache[word] = d; saveExCache(); return d; }
+        return articleExample(word, paraIndex);
+      });
+    }).catch(function () { return articleExample(word, paraIndex); });
   }
   function paraZh(i) {
     var p = article && article.paragraphs[i];
@@ -363,7 +440,13 @@
     var el = $('vocabCount');
     if (el) el.textContent = Object.keys(vocab).length;
   }
-  function wordCard(w, d, source, exEn, exZh) {
+  function exHtml(ex) {
+    if (!ex || !ex.en) return '';
+    return '<div class="ex"><div class="exlabel">' + esc(ex.label || '例句') + '</div>' +
+      '<div>' + esc(ex.en) + '</div>' +
+      (ex.zh ? '<div class="exzh">' + esc(ex.zh) + '</div>' : '') + '</div>';
+  }
+  function wordCard(w, d, source, ex, loading) {
     var inVocab = !!vocab[w];
     var html = '<h3>' + esc(w) + '</h3>' +
       '<div class="rowline"><span class="phon">' + esc(d.phonetic || '—') + '</span> ' +
@@ -371,7 +454,8 @@
       '<div class="rowline"><span class="label">词性</span>' + esc(d.pos || '—') + '</div>';
     if (d.meaning) html += '<div class="mean">' + esc(d.meaning) + '</div>';
     if (d.meaningEn) html += '<div class="ex"><div>' + esc(d.meaningEn) + '</div></div>';
-    if (exEn) html += '<div class="ex"><div>' + esc(exEn) + '</div>' + (exZh ? '<div>' + esc(exZh) + '</div>' : '') + '</div>';
+    html += '<div id="exBox">' + (ex ? exHtml(ex) : (loading ?
+      '<div class="ex"><div class="exlabel">例句</div><div class="exzh">正在查找该词的真实例句…</div></div>' : '')) + '</div>';
     html += '<div class="acts"><button class="mini' + (inVocab ? ' on' : '') + '" id="btnAddVocab">' +
       (inVocab ? '已加入生词本 · 点击移除' : '加入生词本') + '</button></div>' +
       '<div class="src">' + esc(source) + '</div>';
@@ -401,15 +485,22 @@
     currentLookup = {};
     showPanel('<h3>' + esc(w) + '</h3><div class="mean">查询中…</div>');
 
-    function finish(d, source, exEn, exZh) {
+    function finish(d, source, ex, loading) {
       if (currentWord !== w) return;
       currentLookup = d;
-      showPanel(wordCard(w, d, source, exEn, exZh));
+      showPanel(wordCard(w, d, source, ex, loading));
+      if (loading) {
+        resolveExample(w, currentPara).then(function (got) {
+          if (currentWord !== w) return;
+          var box = $('exBox');
+          if (box) box.innerHTML = got ? exHtml(got) : '';
+        });
+      }
     }
     var k = keyMap[w];
     if (k) {
       finish({ phonetic: k.phonetic, pos: k.pos, meaning: k.meaning },
-        '本篇重点词', k.exampleEn, k.exampleZh);
+        '本篇重点词', { en: k.exampleEn, zh: k.exampleZh, label: '本篇重点词例句' });
       return;
     }
     var letter = /^[a-z]/.test(w) ? w[0] : '_';
@@ -429,17 +520,16 @@
       }
       if (found) {
         finish({ phonetic: found.phonetic, pos: found.pos, meaning: found.meaning },
-          note, sentenceFor(w, currentPara), paraZh(currentPara));
+          note, null, true);
         return;
       }
       showPanel('<h3>' + esc(w) + '</h3><div class="mean">本地词库未收录，正在查在线词典…</div>');
       return onlineLookup(w).then(function (o) {
         finish({ phonetic: o.phonetic, pos: o.pos, meaning: '', meaningEn: o.meaningEn, audio: o.audio },
-          '在线词典 Free Dictionary API · 中文见下方段落译文',
-          o.exampleEn || sentenceFor(w, currentPara), paraZh(currentPara));
+          '在线词典 Free Dictionary API · 中文释义见下文例句翻译', null, true);
       }).catch(function () {
         finish({ phonetic: '', pos: '', meaning: '本地词库与在线词典均未收录该词，先参考它在文中的上下文。', meaningEn: '' },
-          '上下文兜底（点词永远有反馈）', sentenceFor(w, currentPara), paraZh(currentPara));
+          '上下文兜底（点词永远有反馈）', null, true);
       });
     });
   }
