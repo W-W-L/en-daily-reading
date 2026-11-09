@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f6e56">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="format-detection" content="telephone=no">
+<title>英语每日阅读</title>
+<style>
+  :root {
+    --bg: #f7f8f6;
+    --card: #ffffff;
+    --ink: #1f2321;
+    --muted: #6b736e;
+    --line: #e2e6e2;
+    --accent: #0f6e56;
+    --accent-soft: #e1f5ee;
+    --warn: #854f0b;
+    --warn-soft: #faeeda;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.75 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  }
+  .wrap { max-width: 780px; margin: 0 auto; padding: 24px 18px 120px; }
+  header { padding: 8px 0 18px; border-bottom: 1px solid var(--line); }
+  h1 { font-size: 22px; font-weight: 600; margin: 0 0 8px; line-height: 1.4; }
+  .meta { color: var(--muted); font-size: 13px; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+  .badge { background: var(--accent-soft); color: var(--accent); border-radius: 6px; padding: 1px 8px; font-size: 12px; }
+  .meta a { color: var(--accent); text-decoration: none; }
+  .meta a:hover { text-decoration: underline; }
+  .notice { margin: 14px 0 0; padding: 10px 14px; border-radius: 8px; font-size: 13px; }
+  .notice.warn { background: var(--warn-soft); color: var(--warn); }
+  .notice.hide { display: none; }
+  .bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--line); margin-bottom: 8px; }
+  button { font: inherit; font-size: 13px; cursor: pointer; padding: 6px 13px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--ink); }
+  button:hover { border-color: var(--accent); color: var(--accent); }
+  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  button.primary:hover { color: #fff; opacity: .88; }
+  select { font: inherit; font-size: 13px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--ink); max-width: 230px; }
+  label.rate { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  input[type=range] { width: 86px; }
+  input[type=url] { font: inherit; font-size: 13px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px; width: 100%; }
+  .hint { color: var(--muted); font-size: 12px; margin: 2px 0 16px; }
+  .config { display: none; margin: 0 0 16px; padding: 14px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; }
+  .config.show { display: block; }
+  .config p { margin: 0 0 8px; font-size: 13px; color: var(--muted); }
+  .config .row { display: flex; gap: 8px; }
+  .para { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin: 14px 0; }
+  .para .idx { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+  .en { font-size: 16px; line-height: 1.85; }
+  .w { cursor: pointer; border-radius: 3px; padding: 0 1px; }
+  .w:hover { background: var(--accent-soft); }
+  .w.key { border-bottom: 1px dashed var(--accent); }
+  .zh { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); color: #414a45; font-size: 14px; line-height: 1.8; }
+  .zh.hide { display: none; }
+  .words { margin-top: 26px; }
+  .words h2 { font-size: 15px; font-weight: 600; margin: 0 0 10px; }
+  .kw { display: inline-block; margin: 0 6px 6px 0; padding: 3px 10px; border: 1px solid var(--line); border-radius: 20px; background: var(--card); font-size: 13px; cursor: pointer; }
+  .kw:hover { border-color: var(--accent); color: var(--accent); }
+  .panel { position: fixed; left: 50%; transform: translateX(-50%); bottom: 0; width: min(780px, 100%); background: var(--card); border: 1px solid var(--line); border-bottom: none; border-radius: 14px 14px 0 0; padding: 16px 20px 20px; box-shadow: 0 -6px 24px rgba(0,0,0,.07); display: none; z-index: 9; }
+  .panel.show { display: block; }
+  .panel .close { position: absolute; right: 12px; top: 10px; border: none; background: none; font-size: 20px; color: var(--muted); padding: 2px 8px; }
+  .panel h3 { margin: 0 0 4px; font-size: 19px; font-weight: 600; }
+  .panel .phon { color: var(--accent); font-size: 14px; margin-right: 10px; }
+  .panel .pos { color: var(--muted); font-size: 13px; }
+  .panel .mean { margin: 8px 0 12px; font-size: 15px; }
+  .panel .ex { background: var(--bg); border-radius: 8px; padding: 10px 12px; font-size: 14px; }
+  .panel .ex div + div { color: var(--muted); margin-top: 4px; }
+  .panel .src { color: var(--muted); font-size: 12px; margin-top: 10px; }
+  .panel .rowline { margin: 6px 0; font-size: 14px; }
+  .panel .label { color: var(--muted); font-size: 12px; margin-right: 6px; }
+  .panel button.mini { font-size: 12px; padding: 4px 10px; min-height: 30px; vertical-align: middle; }
+  .panel .acts { margin-top: 12px; }
+  .panel .acts button.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+  .vocab-item { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+  .vocab-item:last-child { border-bottom: none; }
+  .vocab-item .vword { min-width: 100px; font-weight: 600; }
+  .vocab-item .vmean { flex: 1 1 160px; color: var(--muted); }
+  footer { color: var(--muted); font-size: 12px; margin-top: 30px; line-height: 1.8; }
+  /* 触屏设备：去掉悬停态，避免点过之后样式粘住 */
+  @media (hover: none) {
+    .w:hover { background: transparent; }
+    button:hover { border-color: var(--line); color: var(--ink); }
+    button.primary:hover { color: #fff; opacity: 1; }
+    .kw:hover { border-color: var(--line); color: var(--ink); }
+  }
+  /* 手机窄屏：加大触控目标、放宽阅读行距、限制释义面板高度 */
+  @media (max-width: 600px) {
+    * { -webkit-tap-highlight-color: transparent; }
+    body { -webkit-text-size-adjust: 100%; font-size: 15px; }
+    .wrap { padding: 16px 12px 132px; }
+    h1 { font-size: 19px; }
+    .meta { font-size: 12px; gap: 6px 10px; }
+    .bar { gap: 6px; padding: 12px 0; }
+    button { padding: 8px 12px; min-height: 38px; font-size: 13px; }
+    button.primary { flex: 1 1 110px; }
+    select { max-width: 100%; flex: 1 1 150px; min-height: 38px; }
+    label.rate { width: 100%; justify-content: space-between; margin-top: 2px; }
+    input[type=range] { width: 150px; }
+    .config .row { flex-direction: column; }
+    .config .row button { width: 100%; }
+    .para { padding: 14px; margin: 12px 0; border-radius: 10px; }
+    .en { font-size: 17px; line-height: 1.9; }
+    .zh { font-size: 14px; }
+    .kw { padding: 6px 13px; margin: 0 6px 8px 0; }
+    .panel { padding: 14px 16px calc(22px + env(safe-area-inset-bottom)); max-height: 68vh; overflow-y: auto; }
+    .panel .close { padding: 6px 12px; font-size: 24px; }
+    .hint, footer { font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1 id="title">加载中…</h1>
+    <div class="meta" id="meta"></div>
+    <div class="notice warn hide" id="notice"></div>
+  </header>
+
+  <div class="bar">
+    <select id="history" aria-label="历史文章"><option value="">今日文章</option></select>
+    <button class="primary" id="btnSpeak">朗读全文</button>
+    <button id="btnPause">暂停</button>
+    <button id="btnStop">停止</button>
+    <label class="rate">语速 <input type="range" id="rate" min="0.6" max="1.4" step="0.1" value="0.9"><span id="rateVal">0.9</span></label>
+    <button id="btnZh">隐藏译文</button>
+    <button id="btnRefresh">重新拉取最新</button>
+    <button id="btnVocab">生词本 <span id="vocabCount">0</span></button>
+    <button id="btnConfig">数据源设置</button>
+  </div>
+
+  <div class="config" id="config">
+    <p>填入固定数据 URL，推荐 jsDelivr CDN：https://cdn.jsdelivr.net/gh/&lt;owner&gt;/&lt;repo&gt;@main/articles.json（国内可达、带 CORS）。不要用 raw.githubusercontent.com 或 Gist raw，实测会超时。留空则读取本地 ./data/articles.json。</p>
+    <div class="row"><input type="url" id="dataUrl" placeholder="https://cdn.jsdelivr.net/gh/owner/repo@main/articles.json"><button id="btnSaveUrl">保存并刷新</button></div>
+  </div>
+
+  <p class="hint">历史文章：本机自动保存最近 30 篇（换设备不共享）；若数据源同时发布了 index.json 归档清单，则可跨设备回看任意一天。「重新拉取最新」只重新读数据源，真正重新生成需在 WorkBuddy 定时任务里点「立即运行」。点单词查义，划选句子看该段译文。</p>
+
+  <main id="content"></main>
+
+  <section class="words" id="wordsBox">
+    <h2>本篇重点词</h2>
+    <div id="words"></div>
+  </section>
+
+  <footer>
+    译文与例句在生成时一次写入 JSON，页面不调用任何翻译或词典 API；朗读使用浏览器 Web Speech API；词义来自内置重点词与离线 ECDICT 子集。页面自带一份文章兜底数据，离线或预览沙箱中也能正常阅读。
+  </footer>
+</div>
+
+<div class="panel" id="panel">
+  <button class="close" id="btnClose" aria-label="关闭">×</button>
+  <div id="panelBody"></div>
+</div>
+
+<script id="seed" type="application/json">{"id":"2026-11-09","date":"2026-11-09","title":"When a Pizza Topping Becomes a Matter of Principle","topic":"文化与社会","difficulty":"六级","wordCount":496,"paragraphs":[{"en":"An Italian chef working in Brisbane, Australia, has lost his job after repeatedly refusing to put pineapple on pizzas, a decision that has sparked an unexpectedly fierce debate about food, culture and workplace authority. The chef took his case to the Fair Work Commission, Australia's national workplace tribunal, hoping to be reinstated. His application was rejected, however, because it had been lodged after the statutory deadline. He has since found employment at another Italian restaurant.","zh":"一名在澳大利亚布里斯班工作的意大利厨师，因多次拒绝在披萨上放菠萝而丢了工作。这个决定意外地引发了一场关于食物、文化与职场权限的激烈争论。厨师把案子提交给澳大利亚全国性的劳动仲裁机构「公平工作委员会」，希望恢复职务。然而他的申请因超过法定期限才提交而被驳回。此后他已在另一家意大利餐厅找到工作。"},{"en":"According to submissions made to the commission, the chef was dismissed in May after declining his employer's instruction to prepare ham and pineapple pizzas for customers. He argued that topping a pizza with the tropical fruit was an insult to his culture, and therefore a matter of principle rather than mere preference. The restaurant's management contended that the refusal was only one of several conduct issues, and that repeated disregard of reasonable instructions had eroded the working relationship. The commission did not rule on whether pineapple belongs on pizza; it simply found that the claim was out of time.","zh":"根据提交给委员会的材料，这名厨师在五月因拒绝执行雇主关于为顾客制作火腿菠萝披萨的指示而被解雇。他主张，在披萨上加这种热带水果是对其文化的冒犯，因此这是原则问题，而不只是个人口味偏好。餐厅管理层则争辩说，拒绝执行只是若干行为问题之一，反复无视合理指示已经损害了双方的劳动关系。委员会并未就菠萝该不该出现在披萨上作出裁决，只是认定这项申诉已超过时限。"},{"en":"The episode has reopened a long-running argument. For pizza purists, particularly in Italy, sweet fruit on a savoury flatbread represents something close to culinary heresy. Elsewhere, the combination is an unremarkable menu staple. The so-called Hawaiian pizza was reportedly created in Canada in 1962 by a restaurateur who paired ham with canned pineapple, apparently to capitalise on the fashion for tropical flavours at the time. Its name refers to the brand of tinned fruit used, not to any Hawaiian tradition.","zh":"这件事重新掀开了一场旷日持久的争论。对披萨纯粹主义者、尤其是意大利人来说，把甜水果放在咸味面饼上几乎等同于烹饪上的离经叛道。而在别的地方，这种搭配只是菜单上再普通不过的常备品。据说所谓「夏威夷披萨」是 1962 年由加拿大一位餐饮业主发明的，他把火腿与罐装菠萝配在一起，大概是想借当时热带风味流行的东风。这个名字来自所用罐头菠萝的品牌，与夏威夷的任何传统都无关。"},{"en":"Reactions to the dismissal have been equally divided. One restaurant owner interviewed about the dispute conceded that the Hawaiian pizza was not his absolute favourite, but added that he would not turn his nose up at it if a customer ordered one. Many restaurateurs take a pragmatic view: customers should be free to choose whichever toppings they enjoy, and a kitchen's job is to accommodate that demand. Others sympathise with the chef, arguing that a cook's professional identity and cultural heritage deserve some protection in the workplace.","zh":"外界对这次解雇的反应同样两极分化。一位受访的餐厅老板承认，夏威夷披萨并非他的最爱，但补充说，如果顾客点了，他也不会嫌弃。许多餐饮从业者持务实态度：顾客应当可以自由选择自己喜欢的配料，而后厨的职责就是满足这种需求。另一些人则同情这名厨师，认为厨师的职业身份和文化传承在职场上也应得到一定保护。"},{"en":"Behind the humour lies a genuine question about the limits of managerial authority. Employment law generally expects staff to follow lawful and reasonable instructions, yet it also recognises that conscience and cultural belief can sometimes justify accommodation. Had the application been filed on time, the tribunal might have had to weigh these competing claims. Instead, a procedural technicality ended the case before any such analysis took place, leaving the substantive argument unresolved.","zh":"在幽默背后，是一个关于管理权限边界的真问题。劳动法通常要求员工服从合法且合理的指示，但同时也承认，良知与文化信念有时足以构成予以通融的理由。假如申请是按时提交的，仲裁庭或许就不得不权衡这两种相互冲突的主张。结果，一个程序上的技术性问题让案件在展开任何实质分析之前便告终结，核心争论依然悬而未决。"},{"en":"For now, the chef has moved on, and pineapple remains on menus around the world. The dispute is unlikely to settle the great pizza debate, but it offers a useful reminder that food is rarely just food: it carries identity, memory and belonging. Whether a fruit belongs on a flatbread may seem trivial, yet the intensity of the reaction suggests that people treat culinary traditions as part of who they are, and that disagreements about them deserve rather more care than a dismissal letter.","zh":"眼下，这名厨师已经翻篇，菠萝也依旧留在世界各地的菜单上。这场争议大概无法为披萨之争画上句号，却提醒我们：食物很少只是食物，它承载着身份、记忆与归属。一种水果该不该出现在面饼上看似微不足道，但反应之强烈说明，人们把烹饪传统视为自我的一部分，而围绕它的分歧，值得比一纸解雇信更慎重的对待。"}],"keyWords":[{"word":"reinstate","phonetic":"/ˌriːɪnˈsteɪt/","pos":"v.","meaning":"使复职；恢复（原状）","exampleEn":"The tribunal ordered the company to reinstate the dismissed worker.","exampleZh":"仲裁庭命令公司让被解雇的员工复职。"},{"word":"tribunal","phonetic":"/traɪˈbjuːnl/","pos":"n.","meaning":"仲裁庭；特别法庭","exampleEn":"The case was heard by an independent tribunal.","exampleZh":"此案由一个独立仲裁庭审理。"},{"word":"lodge","phonetic":"/lɒdʒ/","pos":"v.","meaning":"正式提出（申诉、投诉）","exampleEn":"She lodged a complaint within the required time limit.","exampleZh":"她在规定期限内提出了申诉。"},{"word":"statutory","phonetic":"/ˈstætʃətri/","pos":"adj.","meaning":"法定的；依法必须履行的","exampleEn":"Employees must receive their statutory holiday entitlement.","exampleZh":"员工必须享有法定休假权利。"},{"word":"contend","phonetic":"/kənˈtend/","pos":"v.","meaning":"主张；争辩","exampleEn":"The company contended that the dismissal was justified.","exampleZh":"公司主张这次解雇是正当的。"},{"word":"purist","phonetic":"/ˈpjʊərɪst/","pos":"n.","meaning":"纯粹主义者；拘泥正统的人","exampleEn":"Purists insist that the original recipe should never be altered.","exampleZh":"纯粹主义者坚持原始配方绝不应改动。"},{"word":"heresy","phonetic":"/ˈherəsi/","pos":"n.","meaning":"异端；离经叛道之举","exampleEn":"To some critics, the change was nothing short of heresy.","exampleZh":"对一些评论者而言，这种改动简直是离经叛道。"},{"word":"staple","phonetic":"/ˈsteɪpl/","pos":"n.","meaning":"主食；常备品；主要产品","exampleEn":"Rice is a staple in many Asian countries.","exampleZh":"米饭是许多亚洲国家的主食。"},{"word":"pragmatic","phonetic":"/præɡˈmætɪk/","pos":"adj.","meaning":"务实的；讲求实际的","exampleEn":"They adopted a pragmatic approach to the dispute.","exampleZh":"他们对这场争议采取了务实的处理方式。"},{"word":"accommodate","phonetic":"/əˈkɒmədeɪt/","pos":"v.","meaning":"顺应，满足（需求）；容纳","exampleEn":"The restaurant tries to accommodate dietary requirements.","exampleZh":"这家餐厅尽量满足顾客的饮食要求。"},{"word":"procedural","phonetic":"/prəˈsiːdʒərəl/","pos":"adj.","meaning":"程序上的；手续性的","exampleEn":"The appeal was rejected on procedural grounds.","exampleZh":"上诉因程序上的理由被驳回。"},{"word":"trivial","phonetic":"/ˈtrɪviəl/","pos":"adj.","meaning":"微不足道的；琐碎的","exampleEn":"It may seem trivial, but the detail matters.","exampleZh":"这看似微不足道，但细节很要紧。"}],"audioText":"An Italian chef working in Brisbane, Australia, has lost his job after repeatedly refusing to put pineapple on pizzas, a decision that has sparked an unexpectedly fierce debate about food, culture and workplace authority. The chef took his case to the Fair Work Commission, Australia's national workplace tribunal, hoping to be reinstated. His application was rejected, however, because it had been lodged after the statutory deadline. He has since found employment at another Italian restaurant.\n\nAccording to submissions made to the commission, the chef was dismissed in May after declining his employer's instruction to prepare ham and pineapple pizzas for customers. He argued that topping a pizza with the tropical fruit was an insult to his culture, and therefore a matter of principle rather than mere preference. The restaurant's management contended that the refusal was only one of several conduct issues, and that repeated disregard of reasonable instructions had eroded the working relationship. The commission did not rule on whether pineapple belongs on pizza; it simply found that the claim was out of time.\n\nThe episode has reopened a long-running argument. For pizza purists, particularly in Italy, sweet fruit on a savoury flatbread represents something close to culinary heresy. Elsewhere, the combination is an unremarkable menu staple. The so-called Hawaiian pizza was reportedly created in Canada in 1962 by a restaurateur who paired ham with canned pineapple, apparently to capitalise on the fashion for tropical flavours at the time. Its name refers to the brand of tinned fruit used, not to any Hawaiian tradition.\n\nReactions to the dismissal have been equally divided. One restaurant owner interviewed about the dispute conceded that the Hawaiian pizza was not his absolute favourite, but added that he would not turn his nose up at it if a customer ordered one. Many restaurateurs take a pragmatic view: customers should be free to choose whichever toppings they enjoy, and a kitchen's job is to accommodate that demand. Others sympathise with the chef, arguing that a cook's professional identity and cultural heritage deserve some protection in the workplace.\n\nBehind the humour lies a genuine question about the limits of managerial authority. Employment law generally expects staff to follow lawful and reasonable instructions, yet it also recognises that conscience and cultural belief can sometimes justify accommodation. Had the application been filed on time, the tribunal might have had to weigh these competing claims. Instead, a procedural technicality ended the case before any such analysis took place, leaving the substantive argument unresolved.\n\nFor now, the chef has moved on, and pineapple remains on menus around the world. The dispute is unlikely to settle the great pizza debate, but it offers a useful reminder that food is rarely just food: it carries identity, memory and belonging. Whether a fruit belongs on a flatbread may seem trivial, yet the intensity of the reaction suggests that people treat culinary traditions as part of who they are, and that disagreements about them deserve rather more care than a dismissal letter.","sourceName":"Breaking News English","sourceUrl":"https://breakingnewsenglish.com/2611/261109-pineapple-on-pizza.html","updatedAt":"2026-11-09T13:07:05+08:00"}</script>
+<script>
+(function () {
+  'use strict';
+
+  var DEFAULT_DATA_URL = './data/articles.json';
+  var FIXED_DATA_URL = '';
+  var MAX_LOCAL_HISTORY = 30;
+
+  var article = null;
+  var dict = {};
+  var keyMap = {};
+  var queue = [];
+  var idx = 0;
+  var playing = false;
+  var entries = {};
+  var localHistory = {};
+  var seed = null;
+  var dictCache = {};
+  var dictPending = {};
+  var vocab = {};
+  var currentWord = '';
+  var currentPara = 0;
+  var currentLookup = {};
+
+  function $(id) { return document.getElementById(id); }
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function today() {
+    var d = new Date();
+    function p(n) { return (n < 10 ? '0' : '') + n; }
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+  }
+  function dataUrl() { return localStorage.getItem('dr:dataUrl') || FIXED_DATA_URL || DEFAULT_DATA_URL; }
+  function baseUrl() { return new URL(dataUrl(), location.href); }
+  function manifestUrl() { return new URL('index.json', baseUrl()).href; }
+  function bust(url) { return url + (url.indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now(); }
+  function getJson(url) {
+    return fetch(bust(url), { cache: 'no-store' }).then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    });
+  }
+
+  try { seed = JSON.parse($('seed').textContent); } catch (e) { seed = null; }
+  if (!seed || !seed.id) seed = null;
+  try { localHistory = JSON.parse(localStorage.getItem('dr:history') || '{}') || {}; } catch (e) { localHistory = {}; }
+  try { vocab = JSON.parse(localStorage.getItem('dr:vocab') || '{}') || {}; } catch (e) { vocab = {}; }
+  updateVocabCount();
+
+  function showNotice(text) { var el = $('notice'); el.textContent = text; el.className = 'notice warn'; }
+  function hideNotice() { $('notice').className = 'notice warn hide'; }
+  function showPanel(html) { $('panelBody').innerHTML = html; $('panel').className = 'panel show'; }
+  function hidePanel() { $('panel').className = 'panel'; }
+  $('btnClose').onclick = hidePanel;
+
+  function saveHistory(a) {
+    if (!a || !a.date) return;
+    localHistory[a.date] = a;
+    var keys = Object.keys(localHistory).sort().reverse();
+    if (keys.length > MAX_LOCAL_HISTORY) {
+      keys.slice(MAX_LOCAL_HISTORY).forEach(function (k) { delete localHistory[k]; });
+    }
+    try { localStorage.setItem('dr:history', JSON.stringify(localHistory)); } catch (e) {}
+  }
+
+  function renderHistory(manifest) {
+    entries = {};
+    if (manifest && manifest.articles) {
+      manifest.articles.forEach(function (e) { if (e && e.date) entries[e.date] = e; });
+    }
+    Object.keys(localHistory).forEach(function (d) {
+      if (!entries[d]) {
+        entries[d] = { date: d, title: localHistory[d].title, topic: localHistory[d].topic, file: null };
+      }
+    });
+    var dates = Object.keys(entries).sort().reverse();
+    var current = $('history').value;
+    $('history').innerHTML = '<option value="">今日文章</option>' + dates.map(function (d) {
+      var t = entries[d].title || '';
+      if (t.length > 22) t = t.slice(0, 22) + '…';
+      return '<option value="' + esc(d) + '">' + esc(d) + ' · ' + esc(t) + '</option>';
+    }).join('');
+    if (current && entries[current]) $('history').value = current;
+  }
+
+  function dictBase() {
+    try { return new URL('dict/', baseUrl()).href; } catch (e) { return './data/dict/'; }
+  }
+  function loadShard(letter) {
+    if (dictCache[letter]) return Promise.resolve(dictCache[letter]);
+    if (dictPending[letter]) return dictPending[letter];
+    dictPending[letter] = getJson(dictBase() + letter + '.json')
+      .then(function (d) { dictCache[letter] = d || {}; return dictCache[letter]; })
+      .catch(function () { dictCache[letter] = {}; return dictCache[letter]; })
+      .then(function (d) { delete dictPending[letter]; return d; });
+    return dictPending[letter];
+  }
+  function stemCandidates(w) {
+    var out = [];
+    function add(x) { if (x && x.length > 1 && x !== w && out.indexOf(x) < 0) out.push(x); }
+    if (/ies$/.test(w)) add(w.slice(0, -3) + 'y');
+    if (/es$/.test(w)) add(w.slice(0, -2));
+    if (/s$/.test(w)) add(w.slice(0, -1));
+    if (/ing$/.test(w)) { add(w.slice(0, -3)); add(w.slice(0, -3) + 'e'); }
+    if (/ed$/.test(w)) { add(w.slice(0, -2)); add(w.slice(0, -1)); add(w.slice(0, -2) + 'e'); }
+    if (/ly$/.test(w)) add(w.slice(0, -2));
+    return out;
+  }
+  function fetchJsonTimed(url, ms) {
+    return new Promise(function (resolve, reject) {
+      var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      var timer = setTimeout(function () {
+        if (ctrl) ctrl.abort();
+        reject(new Error('timeout'));
+      }, ms);
+      var opts = { cache: 'no-store' };
+      if (ctrl) opts.signal = ctrl.signal;
+      fetch(url, opts).then(function (r) {
+        clearTimeout(timer);
+        if (!r.ok) { reject(new Error('HTTP ' + r.status)); return; }
+        resolve(r.json());
+      }).catch(function (e) { clearTimeout(timer); reject(e); });
+    });
+  }
+  function onlineLookup(word) {
+    var url = 'https://api.dictionaryapi.dev/api/v2/entries/en/' + encodeURIComponent(word);
+    function attempt(left) {
+      return fetchJsonTimed(url, 6000).catch(function (e) {
+        if (left > 0) return attempt(left - 1);
+        throw e;
+      });
+    }
+    return attempt(1).then(function (d) {
+      var e = Array.isArray(d) && d[0];
+      if (!e) throw new Error('empty');
+      var phonetic = e.phonetic || '', audio = '', pos = '', def = '', example = '';
+      (e.meanings || []).some(function (m) {
+        var first = m.definitions && m.definitions[0];
+        if (!def && first) {
+          pos = m.partOfSpeech || '';
+          def = first.definition || '';
+          example = first.example || '';
+        }
+        return !!def;
+      });
+      (e.phonetics || []).some(function (p) {
+        if (!phonetic && p.text) phonetic = p.text;
+        if (!audio && p.audio) audio = p.audio;
+        return !!(phonetic && audio);
+      });
+      if (phonetic && phonetic.charAt(0) !== '/') phonetic = '/' + phonetic + '/';
+      return { phonetic: phonetic, pos: pos, meaningEn: def, exampleEn: example, audio: audio };
+    });
+  }
+  function sentenceFor(word, i) {
+    var p = article && article.paragraphs[i];
+    if (!p) return '';
+    var sents = p.en.match(/[^.!?]+[.!?]?/g) || [];
+    for (var j = 0; j < sents.length; j++) {
+      if (sents[j].toLowerCase().indexOf(word.toLowerCase()) >= 0) return sents[j].trim();
+    }
+    return p.en.slice(0, 180);
+  }
+  function paraZh(i) {
+    var p = article && article.paragraphs[i];
+    return p ? p.zh : '';
+  }
+  function speakWord(word, done) {
+    if (!('speechSynthesis' in window)) { done(); return; }
+    try {
+      window.speechSynthesis.cancel();
+      var u = new SpeechSynthesisUtterance(word);
+      u.lang = 'en-US'; u.rate = 0.85;
+      u.onend = done; u.onerror = done;
+      window.speechSynthesis.speak(u);
+      setTimeout(done, 4000);
+    } catch (e) { done(); }
+  }
+  function pronounce(word, btn) {
+    var audio = currentLookup && currentLookup.audio;
+    var done = function () { if (btn) { btn.disabled = false; btn.textContent = '发音'; } };
+    if (btn) { btn.disabled = true; btn.textContent = '播放中…'; }
+    var src = audio ? (/^https?:/.test(audio) ? audio : (/^\/\//.test(audio) ? 'https:' + audio : '')) : '';
+    if (src) {
+      try {
+        var a = new Audio(src);
+        a.onended = done; a.onerror = done;
+        a.play().catch(function () { speakWord(word, done); });
+        setTimeout(done, 6000);
+        return;
+      } catch (e) {}
+    }
+    speakWord(word, done);
+  }
+  function saveVocab() {
+    try { localStorage.setItem('dr:vocab', JSON.stringify(vocab)); } catch (e) {}
+    updateVocabCount();
+  }
+  function updateVocabCount() {
+    var el = $('vocabCount');
+    if (el) el.textContent = Object.keys(vocab).length;
+  }
+  function wordCard(w, d, source, exEn, exZh) {
+    var inVocab = !!vocab[w];
+    var html = '<h3>' + esc(w) + '</h3>' +
+      '<div class="rowline"><span class="phon">' + esc(d.phonetic || '—') + '</span> ' +
+      '<button class="mini" id="btnPron">发音</button></div>' +
+      '<div class="rowline"><span class="label">词性</span>' + esc(d.pos || '—') + '</div>';
+    if (d.meaning) html += '<div class="mean">' + esc(d.meaning) + '</div>';
+    if (d.meaningEn) html += '<div class="ex"><div>' + esc(d.meaningEn) + '</div></div>';
+    if (exEn) html += '<div class="ex"><div>' + esc(exEn) + '</div>' + (exZh ? '<div>' + esc(exZh) + '</div>' : '') + '</div>';
+    html += '<div class="acts"><button class="mini' + (inVocab ? ' on' : '') + '" id="btnAddVocab">' +
+      (inVocab ? '已加入生词本 · 点击移除' : '加入生词本') + '</button></div>' +
+      '<div class="src">' + esc(source) + '</div>';
+    return html;
+  }
+  function showVocab() {
+    var keys = Object.keys(vocab).sort();
+    if (!keys.length) {
+      showPanel('<h3>生词本</h3><div class="mean">还没有收藏单词。点正文里的任意单词，再点「加入生词本」即可。</div>');
+      return;
+    }
+    var html = '<h3>生词本 · ' + keys.length + ' 个</h3>';
+    keys.forEach(function (w) {
+      var v = vocab[w];
+      html += '<div class="vocab-item"><span class="vword">' + esc(w) + '</span>' +
+        '<span class="vmean">' + esc([v.phonetic, v.pos, v.meaning].filter(Boolean).join(' · ')) + '</span>' +
+        '<button class="mini" id="pron:' + esc(w) + '">发音</button>' +
+        '<button class="mini" id="del:' + esc(w) + '">删除</button></div>';
+    });
+    showPanel(html);
+  }
+  function lookup(word, paraIndex) {
+    var w = String(word).toLowerCase().replace(/[^a-z'-]/g, '');
+    if (!w) return;
+    currentWord = w;
+    currentPara = (paraIndex === undefined || paraIndex === null || paraIndex === '') ? 0 : (parseInt(paraIndex, 10) || 0);
+    currentLookup = {};
+    showPanel('<h3>' + esc(w) + '</h3><div class="mean">查询中…</div>');
+
+    function finish(d, source, exEn, exZh) {
+      if (currentWord !== w) return;
+      currentLookup = d;
+      showPanel(wordCard(w, d, source, exEn, exZh));
+    }
+    var k = keyMap[w];
+    if (k) {
+      finish({ phonetic: k.phonetic, pos: k.pos, meaning: k.meaning },
+        '本篇重点词', k.exampleEn, k.exampleZh);
+      return;
+    }
+    var letter = /^[a-z]/.test(w) ? w[0] : '_';
+    loadShard(letter).then(function (shard) {
+      if (currentWord !== w) return;
+      var found = shard[w];
+      var note = '离线精简词库 ECDICT（CET-4/6 · 考研 · 雅思托福 · 高频）';
+      if (!found) {
+        var cands = stemCandidates(w);
+        for (var i = 0; i < cands.length; i++) {
+          if (shard[cands[i]]) {
+            found = shard[cands[i]];
+            note = '离线精简词库（词形还原 → ' + cands[i] + '）';
+            break;
+          }
+        }
+      }
+      if (found) {
+        finish({ phonetic: found.phonetic, pos: found.pos, meaning: found.meaning },
+          note, sentenceFor(w, currentPara), paraZh(currentPara));
+        return;
+      }
+      showPanel('<h3>' + esc(w) + '</h3><div class="mean">本地词库未收录，正在查在线词典…</div>');
+      return onlineLookup(w).then(function (o) {
+        finish({ phonetic: o.phonetic, pos: o.pos, meaning: '', meaningEn: o.meaningEn, audio: o.audio },
+          '在线词典 Free Dictionary API · 中文见下方段落译文',
+          o.exampleEn || sentenceFor(w, currentPara), paraZh(currentPara));
+      }).catch(function () {
+        finish({ phonetic: '', pos: '', meaning: '本地词库与在线词典均未收录该词，先参考它在文中的上下文。', meaningEn: '' },
+          '上下文兜底（点词永远有反馈）', sentenceFor(w, currentPara), paraZh(currentPara));
+      });
+    });
+  }
+
+  function renderEn(text, paraIndex) {
+    var re = /([A-Za-z]+(?:['\u2019-][A-Za-z]+)*)/g;
+    var out = '', last = 0, m;
+    while ((m = re.exec(text)) !== null) {
+      out += esc(text.slice(last, m.index));
+      var raw = m[0], key = raw.toLowerCase();
+      var cls = 'w' + (keyMap[key] || dict[key] ? ' key' : '');
+      out += '<span class="' + cls + '" data-w="' + esc(raw) + '" data-p="' + paraIndex + '">' + esc(raw) + '</span>';
+      last = m.index + raw.length;
+    }
+    return out + esc(text.slice(last));
+  }
+
+  function markWords() {
+    document.querySelectorAll('.w').forEach(function (el) {
+      var w = el.getAttribute('data-w').toLowerCase();
+      if (dict[w] && !el.classList.contains('key')) el.classList.add('key');
+    });
+  }
+
+  function render(a) {
+    article = a;
+    keyMap = {};
+    a.keyWords.forEach(function (k) { keyMap[k.word.toLowerCase()] = k; });
+
+    $('title').textContent = a.title;
+    $('meta').innerHTML = '<span>' + esc(a.date) + '</span><span class="badge">' + esc(a.topic) + '</span>' +
+      '<span class="badge">' + esc(a.difficulty) + '</span><span>' + a.wordCount + ' 词</span>' +
+      (a.sourceUrl ? '<a href="' + esc(a.sourceUrl) + '" target="_blank" rel="noopener">原文来源：' + esc(a.sourceName || '链接') + ' ↗</a>' : '');
+
+    $('content').innerHTML = a.paragraphs.map(function (p, i) {
+      return '<article class="para" data-para="' + i + '"><div class="idx">段落 ' + (i + 1) + ' / ' + a.paragraphs.length + '</div>' +
+        '<div class="en">' + renderEn(p.en, i) + '</div><div class="zh">' + esc(p.zh) + '</div></article>';
+    }).join('');
+
+    $('words').innerHTML = a.keyWords.map(function (k) {
+      return '<span class="kw" data-w="' + esc(k.word) + '">' + esc(k.word) + '</span>';
+    }).join('');
+
+    markWords();
+    try { localStorage.setItem('dr:lastArticle', JSON.stringify(a)); } catch (e) {}
+  }
+
+  function loadDict() { updateVocabCount(); }
+
+  function loadManifest() {
+    var url;
+    try { url = manifestUrl(); } catch (e) { return Promise.resolve(null); }
+    return getJson(url).catch(function () { return null; });
+  }
+
+  function fallback(err) {
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem('dr:lastArticle') || 'null'); } catch (e) {}
+    var a = cached || seed;
+    if (a) {
+      render(a);
+      saveHistory(a);
+      renderHistory(null);
+      showNotice('数据源拉取失败（' + err.message + '），当前显示' + (cached ? '上次缓存' : '页面内置文章') + '；可手动重试。');
+    } else {
+      $('title').textContent = '暂无文章';
+      showNotice('数据源拉取失败：' + err.message + '。请检查数据源设置，或在 WorkBuddy 里手动补更新。');
+    }
+  }
+
+  function load() {
+    if (location.protocol === 'file:') {
+      showNotice('当前为 file:// 打开，外部 JSON 可能被浏览器拦截；页面已启用内置文章兜底。');
+    }
+    getJson(dataUrl())
+      .then(function (a) {
+        render(a);
+        saveHistory(a);
+        if (a.date !== today()) {
+          showNotice('今日更新失败，可手动重试。当前显示 ' + a.date + ' 的文章；请在 WorkBuddy 定时任务中点「立即运行」补更新。');
+        } else {
+          hideNotice();
+        }
+        return loadManifest();
+      })
+      .then(function (manifest) { renderHistory(manifest); return loadDict(); })
+      .catch(function (err) { fallback(err); });
+  }
+
+  function openHistory(date) {
+    if (!date) { load(); return; }
+    var e = entries[date];
+    var useLocal = function () {
+      if (localHistory[date]) {
+        render(localHistory[date]);
+        showNotice('正在回看 ' + date + ' 的文章（本机缓存）。');
+      } else {
+        showNotice('这篇历史文章没有本机缓存，归档文件也不可达。');
+      }
+    };
+    if (e && e.file) {
+      var url;
+      try { url = new URL(e.file, baseUrl()).href; } catch (err) { useLocal(); return; }
+      getJson(url).then(function (a) {
+        render(a); saveHistory(a);
+        showNotice('正在回看 ' + date + ' 的文章（数据源归档）。');
+      }).catch(useLocal);
+    } else {
+      useLocal();
+    }
+  }
+
+  $('history').onchange = function () { hidePanel(); $('btnStop').onclick(); openHistory(this.value); };
+
+  var justSelected = false;
+  var lastSelText = '';
+  var selTimer = null;
+  function onSelect() {
+    var sel = window.getSelection();
+    if (!sel || sel.isCollapsed) return;
+    var text = sel.toString().trim();
+    if (text.length < 3 || text === lastSelText) return;
+    lastSelText = text;
+    var node = sel.anchorNode;
+    var el = node && (node.nodeType === 1 ? node : node.parentNode);
+    var para = el && el.closest ? el.closest('.para') : null;
+    if (para && article) {
+      justSelected = true;
+      setTimeout(function () { justSelected = false; }, 700);
+      var i = parseInt(para.getAttribute('data-para'), 10);
+      showPanel('<h3>划选内容</h3><div class="ex"><div>' + esc(text) + '</div></div>' +
+        '<div class="mean">对应段落译文：' + esc(article.paragraphs[i].zh) + '</div>' +
+        '<div class="src">使用预生成翻译，未调用翻译 API</div>');
+    }
+  }
+  function scheduleSelect() {
+    clearTimeout(selTimer);
+    selTimer = setTimeout(onSelect, 180);
+  }
+  // 手机长按划词不会可靠触发 mouseup，补 touchend / selectionchange
+  document.addEventListener('mouseup', scheduleSelect);
+  document.addEventListener('touchend', scheduleSelect);
+  document.addEventListener('selectionchange', scheduleSelect);
+
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest('.w, .kw');
+    if (t) { if (!justSelected) lookup(t.getAttribute('data-w'), t.getAttribute('data-p')); return; }
+    if (justSelected) return;
+    if (!e.target.closest('.panel') && $('panel').className.indexOf('show') >= 0) hidePanel();
+  });
+
+  $('panelBody').addEventListener('click', function (e) {
+    var b = e.target.closest('button');
+    if (!b || !b.id) return;
+    if (b.id === 'btnPron') {
+      pronounce(currentWord, b);
+    } else if (b.id === 'btnAddVocab') {
+      if (vocab[currentWord]) delete vocab[currentWord];
+      else {
+        var d = currentLookup || {};
+        vocab[currentWord] = {
+          word: currentWord, phonetic: d.phonetic || '', pos: d.pos || '',
+          meaning: d.meaning || d.meaningEn || '', date: today()
+        };
+      }
+      saveVocab();
+      b.className = 'mini' + (vocab[currentWord] ? ' on' : '');
+      b.textContent = vocab[currentWord] ? '已加入生词本 · 点击移除' : '加入生词本';
+    } else if (b.id.indexOf('pron:') === 0) {
+      pronounce(b.id.slice(5), b);
+    } else if (b.id.indexOf('del:') === 0) {
+      delete vocab[b.id.slice(4)];
+      saveVocab();
+      showVocab();
+    }
+  });
+
+  $('btnVocab').onclick = function () { showVocab(); };
+
+  $('btnZh').onclick = function () {
+    var first = document.querySelector('.zh');
+    if (!first) return;
+    var hidden = first.classList.contains('hide');
+    document.querySelectorAll('.zh').forEach(function (el) { el.className = hidden ? 'zh' : 'zh hide'; });
+    this.textContent = hidden ? '隐藏译文' : '显示译文';
+  };
+
+  $('btnRefresh').onclick = function () { hidePanel(); $('history').value = ''; load(); };
+  $('btnConfig').onclick = function () {
+    var c = $('config');
+    c.className = c.className.indexOf('show') >= 0 ? 'config' : 'config show';
+    $('dataUrl').value = localStorage.getItem('dr:dataUrl') || '';
+  };
+  $('btnSaveUrl').onclick = function () {
+    var v = $('dataUrl').value.trim();
+    if (v) localStorage.setItem('dr:dataUrl', v); else localStorage.removeItem('dr:dataUrl');
+    $('history').value = '';
+    load();
+  };
+
+  $('rate').oninput = function () { $('rateVal').textContent = this.value; };
+
+  function speakNext() {
+    if (!playing || idx >= queue.length) {
+      if (idx >= queue.length) { playing = false; $('btnSpeak').textContent = '朗读全文'; }
+      return;
+    }
+    var u = new SpeechSynthesisUtterance(queue[idx]);
+    u.lang = 'en-US';
+    u.rate = parseFloat($('rate').value);
+    u.onend = function () { idx += 1; speakNext(); };
+    u.onerror = function () {
+      if (!playing) return;
+      playing = false; $('btnSpeak').textContent = '朗读全文';
+      showNotice('朗读被系统中断。手机锁屏、切到后台或微信内置浏览器可能限制语音合成，建议用 Chrome / Safari 直接打开。');
+    };
+    window.speechSynthesis.speak(u);
+  }
+  var speechUnlocked = false;
+  $('btnSpeak').onclick = function () {
+    if (!article) return;
+    if (!('speechSynthesis' in window)) { showNotice('当前浏览器不支持 Web Speech API，建议用 Chrome、Edge 或 Safari 打开。'); return; }
+    // iOS Safari 要求首次语音合成发生在用户手势内，先预热一次空朗读
+    if (!speechUnlocked) {
+      try { window.speechSynthesis.speak(new SpeechSynthesisUtterance('')); speechUnlocked = true; } catch (e) {}
+    }
+    window.speechSynthesis.cancel();
+    queue = article.audioText.split(/\n\s*\n/).filter(function (s) { return s.trim(); });
+    idx = 0; playing = true; this.textContent = '重新朗读';
+    speakNext();
+  };
+  $('btnPause').onclick = function () {
+    if (!('speechSynthesis' in window)) return;
+    if (window.speechSynthesis.paused) { window.speechSynthesis.resume(); this.textContent = '暂停'; }
+    else { window.speechSynthesis.pause(); this.textContent = '继续'; }
+  };
+  $('btnStop').onclick = function () {
+    playing = false;
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    idx = 0;
+    $('btnPause').textContent = '暂停';
+    $('btnSpeak').textContent = '朗读全文';
+  };
+
+  load();
+})();
+</script>
+</body>
+</html>
